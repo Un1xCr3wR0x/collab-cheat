@@ -30,6 +30,18 @@ T* GetInterface(const char* name, const char* library) {
 
     return CreateInterface(name, nullptr);
 };
+uintptr_t FindFinalAddress(uintptr_t startAddress, const std::vector<uintptr_t>& offsets) {
+    uintptr_t currentAddress = startAddress;
+
+    for (uintptr_t offset : offsets) {
+        // Read memory at current address
+        ReadProcessMemory(GetCurrentProcess(), (LPCVOID)currentAddress, &currentAddress, sizeof(uintptr_t), nullptr);
+        // Add offset
+        currentAddress += offset;
+    }
+
+    return currentAddress;
+}
 
 void HackThread(HMODULE instance) {
     AllocConsole();
@@ -44,7 +56,8 @@ void HackThread(HMODULE instance) {
             CGameEntitySystem* gameEntitySystem = *(CGameEntitySystem**)((uintptr_t)GameResourceServiceClient + 0x58);
             std::cout << "GetHighestEntityIndex: " << gameEntitySystem->GetHighestEntityIndex() << std::endl;
             
-            for (std::size_t index = 0; index <= 64; ++index)
+            for (std::size_t index = 0; index <= gameEntitySystem->GetHighestEntityIndex() ; ++index)
+                //for (std::size_t index = 0; index <= 64; ++index)
             {
                 CBaseEntity* Entity = gameEntitySystem->GetEntity(index);
                 if (Entity && IsValidReadPtr(Entity))
@@ -58,53 +71,73 @@ void HackThread(HMODULE instance) {
 
                     // Using CHandle from Chandle.h
                     CHandle<CBaseEntity>* heroHandle = (CHandle<CBaseEntity>*)((uintptr_t)Entity + offset_m_hAssignedHero);
-                    CDOTABaseNPC* EntityHero = static_cast<CDOTABaseNPC*>(gameEntitySystem->GetEntity(heroHandle->Index()));
+                    if (heroHandle && IsValidReadPtr(heroHandle) && heroHandle->IsValid() && heroHandle->Index() != CHandle<CBaseEntity>::INVALID_HANDLE) {
+                        CDOTABaseNPC* EntityHero = static_cast<CDOTABaseNPC*>(gameEntitySystem->GetEntity(heroHandle->Index()));
 
-                    if (EntityHero && IsValidReadPtr(EntityHero)) {
-                        // Get abilities using the GetAbilities method
-                        std::cout << "ABILITIES!!!!!!!!!!!" << std::endl;
-                        auto abilities = EntityHero->GetAbilities();
-                        for (const auto& abilityHandle : abilities) {
-                            if (abilityHandle.IsValid()) {
-                                auto ability = gameEntitySystem->GetEntity<CDOTABaseAbility>(abilityHandle.Index());
-                                if (ability && IsValidReadPtr(ability)) {
-                                    std::cout << "Ability Name: " << ability->GetIdentity()->GetName() << std::endl;
-                                    std::cout << "Ability Cooldown: " << ability->GetCooldown() << std::endl;
-                                    std::cout << "Ability Mana: " << ability->GetLevelSpecialValueFor<int>("AbilityManaCost") << std::endl;
-                                }
-                            }
-                        }
-						std::cout << "ITEEEEEEEEEEEEEEEEM!!!!!!!!!!!" << std::endl;
-						auto items = EntityHero->GetItems();
-                        for (const auto& itemHandle : items) {
-                            if (itemHandle.IsValid()) {
-                                auto item = gameEntitySystem->GetEntity<CDOTAItem>(itemHandle.Index());
-                                if (item && IsValidReadPtr(item)) {
-                                    std::cout << "Item Name: " << item->GetIdentity()->GetName() << std::endl;
-                                    std::cout << "Item Cooldown: " << item->GetCooldown() << std::endl;
-                                    std::cout << "Item Mana: " << item->GetLevelSpecialValueFor<int>("AbilityManaCost") << std::endl;
-                                }
-                            }
+                        //if (EntityHero && IsValidReadPtr(EntityHero)) {
+                        //    // Get abilities using the GetAbilities method
+                        //    std::cout << "ABILITIES!!!!!!!!!!!" << std::endl;
+                        //    auto abilities = EntityHero->GetAbilities();
+                        //    for (const auto& abilityHandle : abilities) {
+                        //        if (abilityHandle.IsValid()) {
+                        //            auto ability = gameEntitySystem->GetEntity<CDOTABaseAbility>(abilityHandle.Index());
+                        //            if (ability && IsValidReadPtr(ability)) {
+                        //                std::cout << "Ability Name: " << ability->GetIdentity()->GetName() << std::endl;
+                        //                std::cout << "Ability Cooldown: " << ability->GetCooldown() << std::endl;
+                        //                std::cout << "Ability Mana: " << ability->GetLevelSpecialValueFor<int>("AbilityManaCost") << std::endl;
+                        //            }
+                        //        }
+                        //    }
+                        //    std::cout << "ITEEEEEEEEEEEEEEEEM!!!!!!!!!!!" << std::endl;
+                        //    auto items = EntityHero->GetItems();
+                        //    for (const auto& itemHandle : items) {
+                        //        if (itemHandle.IsValid()) {
+                        //            auto item = gameEntitySystem->GetEntity<CDOTAItem>(itemHandle.Index());
+                        //            if (item && IsValidReadPtr(item)) {
+                        //                std::cout << "Item Name: " << item->GetIdentity()->GetName() << std::endl;
+                        //                std::cout << "Item Cooldown: " << item->GetCooldown() << std::endl;
+                        //                std::cout << "Item Mana: " << item->GetLevelSpecialValueFor<int>("AbilityManaCost") << std::endl;
+                        //            }
+                        //        }
+                        //    }
+                        //}
+
+                        if (EntityHero) {
+                            int EntityHeroTaggedAsVisibleByTeam = (int)((uintptr_t)EntityHero + offset_m_iTaggedAsVisibleByTeam);
+                            std::cout << "Entity: " << Entity << std::endl;
+                            std::cout << "EntityHero: " << EntityHero << std::endl;
+							std::cout << "Entity Type " << EntityHero->SchemaBinding()->binaryName << std::endl;
+                            std::cout << "Entity Type " << Entity->GetIdentity() << std::endl;
+                            std::vector<uintptr_t> offsets = { 0x8, 0x40 };
+
+                            uintptr_t finalAddr = FindFinalAddress(reinterpret_cast<uintptr_t>(Entity->GetIdentity()), offsets);
+
+                            std::cout << "Class Fucken Name: " << (char*)finalAddr << std::endl;
+
+
+                            /*const char* entityString = reinterpret_cast<const char*>(stringAddress);
+                                std::cout << "Entity Class Type And Name: " << entityString << std::endl;*/
+
+							//std::cout << "Entity Class Name " << Entity->GetModelName() << std::endl;
+                            //std::cout << "Entity Class: " << EntityHero->GetUnitType() << std::endl;
+                            //std::cout << "Entity GetIdentity: " << EntityHero->GetIdentity() << std::endl;
+                            //std::cout << "Entity Health : " << EntityHero->GetHealth() << std::endl;
+                            //std::cout << "Entity Name : " << (char*)((uintptr_t)Entity + offset_m_iszPlayerName) << std::endl;
+                            /*std::cout << "Entity Max Health : " << EntityHero->GetMaxHealth() << std::endl;
+                            std::cout << "Entity Assigned Hero : " << heroHandle->Index() << std::endl;
+                            std::cout << "is visible: " << EntityHeroTaggedAsVisibleByTeam << std::endl;*/
+
+                            std::stringstream ss;
+                            ss << "player " << (char*)((uintptr_t)Entity + offset_m_iszPlayerName)
+                                << "(" << Entity << ") controls hero indexed "
+                                << heroHandle->Index() << "\n";
+                            OutputDebugStringA(ss.str().c_str());
+
+
+							std::cout << "==================== END OF ENTITY ===============" << std::endl;  
                         }
                     }
-
-
-                    if (EntityHero) {
-                        int EntityHeroTaggedAsVisibleByTeam = (int)((uintptr_t)EntityHero + offset_m_iTaggedAsVisibleByTeam);
-                        std::cout << "Entity: " << Entity << std::endl;
-                        std::cout << "Entity Health : " << EntityHero->GetHealth() << std::endl;
-                        std::cout << "Entity Max Health : " << EntityHero->GetMaxHealth() << std::endl;
-                        std::cout << "Entity Name : " << (char*)((uintptr_t)Entity + offset_m_iszPlayerName) << std::endl;
-                        std::cout << "Entity Assigned Hero : " << heroHandle->Index() << std::endl;
-                        std::cout << "EntityHero: " << EntityHero << std::endl;
-                        std::cout << "is visible: " << EntityHeroTaggedAsVisibleByTeam << std::endl;
-
-                        std::stringstream ss;
-                        ss << "player " << (char*)((uintptr_t)Entity + offset_m_iszPlayerName) 
-                           << "(" << Entity << ") controls hero indexed " 
-                           << heroHandle->Index() << "\n";
-                        OutputDebugStringA(ss.str().c_str());
-                    }
+						
                 }
             }
         }

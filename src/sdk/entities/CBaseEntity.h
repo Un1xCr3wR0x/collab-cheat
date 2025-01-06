@@ -33,6 +33,7 @@ class CDOTAPlayerController;
 struct CEntSchemaClassBinding {
 	const char
 		* binaryName, // ex: C_DOTA_Unit_Hero_Nevermore
+		*GetCEntityClassNetworkInstance,
 		* serverName; // ex: CDOTA_Unit_Hero_Nevermore
 
 	void* parent;
@@ -71,6 +72,7 @@ public:
 	GETTER(int, GetMaxHealth, 0x348);
 	GETTER(DOTA_GC_TEAM, GetTeam, 0x3eb);
 	GETTER(int8_t, GetLifeState, 0x350);
+	GETTER(int8_t, GetUnitType, 0xa94);
 	GETTER(CHandle<CDOTAPlayerController>, GetOwnerEntityHandle, 0x43c);
 	GETTER(CSkeletonInstance*, GetGameSceneNode, 0x330);
 

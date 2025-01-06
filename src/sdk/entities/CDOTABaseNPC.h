@@ -11,10 +11,6 @@ class CDOTABaseNPC : public CBaseEntity {
 public:
 	inline static float(*GetAttackSpeed)(CDOTABaseNPC* npc) = nullptr;
 
-	// Reversed via xref "CDOTA_Hud_HealthMana::Update"
-	// in the beginning after the repeated section with xrefs the hero is acquired
-	// trace the variable in the call with "max_physical_barrier" to the assignment of a value where an offset to hero is used
-	// that offset ultimately leads to such a structure
 	struct BarrierData {
 		float
 			maxPhys,
@@ -27,7 +23,6 @@ public:
 
 	GETTER(BarrierData, GetBarriers, 0x17E4);
 
-	// GETTER(CAssetModifierContainer*, GetAssetModifierContainer, 0xa20);
 
 	IGETTER(CDOTAModifierManager, GetModifierManager, 0xc80);
 
@@ -46,10 +41,6 @@ public:
 	VGETTER(float, GetIdealSpeed, VMI::CDOTABaseNPC::GetIdealSpeed);
 	VGETTER(void, OnWearablesChanged, VMI::CDOTABaseNPC::OnWearablesChanged);
 
-	// Wrapper function combining the following conditions: 
-	// Is not dormant
-	// Is alive
-	// Is not waiting to spawn
 	bool IsTargetable() const {
 		return !IsDormant() && IsAlive() && !IsWaitingToSpawn();
 	}
@@ -150,7 +141,6 @@ public:
 		return (unitState & (1Ui64 << (int)state));
 	}
 
-	// This checks for modifier states under which you cannot give orders to the hero
 	bool IsDisabled() const {
 		return HasState(MODIFIER_STATE_FEARED)
 			|| HasState(MODIFIER_STATE_HEXED)
